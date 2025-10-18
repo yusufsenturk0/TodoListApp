@@ -13,8 +13,6 @@ import com.example.todo_list.Data.Task
 import com.example.todo_list.Data.TaskDAO
 import com.example.todo_list.Data.TaskDatabase
 import com.example.todo_list.databinding.FragmentAddUpdateDeleteTaskBinding
-import com.example.todo_list.util.AlarmPermissionHelper
-import com.example.todo_list.util.ReminderHelper
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
@@ -155,12 +153,7 @@ class AddUpdateDeleteTaskFragment : Fragment() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     {
-                        // Insert başarılı → alarm kur
-                        if (!AlarmPermissionHelper.hasExactAlarmPermission(requireContext())) {
-                            AlarmPermissionHelper.requestExactAlarmPermission(requireContext())
-                        } else if (task.reminderDate != null && task.reminderTime != null) {
-                            ReminderHelper.scheduleReminder(requireContext(), task)
-                        }
+
 
                         handleResponseForInsert()
                     },
@@ -219,15 +212,6 @@ class AddUpdateDeleteTaskFragment : Fragment() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     {
-                        // Önce varsa eski alarmı iptal et
-                        ReminderHelper.cancelReminder(requireContext(), task)
-
-                        // Alarm izin kontrolü + kur
-                        if (!AlarmPermissionHelper.hasExactAlarmPermission(requireContext())) {
-                            AlarmPermissionHelper.requestExactAlarmPermission(requireContext())
-                        } else if (task.reminderDate != null && task.reminderTime != null) {
-                            ReminderHelper.scheduleReminder(requireContext(), task)
-                        }
 
                         handleResponseForInsert()
                     },

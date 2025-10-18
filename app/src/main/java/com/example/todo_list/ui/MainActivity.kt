@@ -17,20 +17,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
-        createNotificationChannel()
+
 
     }
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "reminder_channel",
-                "Görev Hatırlatıcıları",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Zamanı geldiğinde görev hatırlatma bildirimi"
-            }
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
-        }
-    }
+
 }
