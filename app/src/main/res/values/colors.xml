@@ -1,0 +1,16 @@
+<resources>
+    <color name="primaryText">#212121</color>
+    <color name="secondaryText">#757575</color>
+    <color name="cardBackground">#FFFFFF</color>
+    <color name="buttonBackground">#6200EE</color>
+    <color name="buttonText">#FFFFFF</color>
+    <color name="background">#F3F3F3</color>
+    <color name="softGray">#E0E0E0</color>         <!-- yumuşak gri çerçeve -->
+    <color name="iconTint">#9E9E9E</color>         <!-- soft gri ikon -->
+    <color name="checkBoxTint">#8BC34A</color>     <!-- yeşilimsi checkbox tonu -->
+    <color name="iconNotification">#FFA000</color> <!-- amber / sarımsı ton -->
+    <color name="iconEdit">#2196F3</color>         <!-- mavi ton -->
+    <color name="iconDelete">#F44336</color>       <!-- kırmızı ton -->
+
+
+</resources>
