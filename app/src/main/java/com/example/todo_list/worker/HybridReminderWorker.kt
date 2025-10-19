@@ -12,7 +12,7 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 /**
- * Bu Worker 15 dakikada bir çalışır ve:
+ * Bu Worker 15 dakikada bir çalışır ve:asdasdasdada
  * 1. Yaklaşan görevleri kontrol eder
  * 2. Alarmları yeniden kurar (force stop sonrası için)
  * 3. Zamanı gelen görevler için bildirim gösterir
