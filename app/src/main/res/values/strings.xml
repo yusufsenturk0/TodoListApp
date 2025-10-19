@@ -1,5 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">todo_list</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="app_name">Todo List</string>
+
+    <!-- Fragment başlıkları -->
+    <string name="task_list_title">Görevlerim</string>
+    <string name="add_task_title">Yeni Görev</string>
+    <string name="edit_task_title">Görevi Düzenle</string>
+
+    <!-- Button metinleri -->
+    <string name="add_button">Ekle</string>
+    <string name="update_button">Güncelle</string>
+    <string name="delete_button">Sil</string>
+    <string name="cancel_button">İptal</string>
+    <string name="save_button">Kaydet</string>
+
+    <!-- Input hint metinleri -->
+    <string name="hint_task_title">Görev Başlığı</string>
+    <string name="hint_task_description">Açıklama</string>
+    <string name="hint_date">Tarih Seç</string>
+    <string name="hint_time">Saat Seç</string>
+
+    <!-- Reminder -->
+    <string name="reminder_switch">Hatırlatıcı Ekle</string>
+    <string name="reminder_date">Tarih</string>
+    <string name="reminder_time">Saat</string>
+
+    <!-- Toast mesajları -->
+    <string name="task_added">Görev eklendi</string>
+    <string name="task_updated">Görev güncellendi</string>
+    <string name="task_deleted">Görev silindi</string>
+    <string name="error_empty_fields">Lütfen tüm alanları doldurun</string>
+    <string name="error_save">Kaydetme hatası</string>
+
+    <!-- Dialog metinleri -->
+    <string name="delete_confirmation">Bu görevi silmek istediğinize emin misiniz?</string>
+    <string name="yes">Evet</string>
+    <string name="no">Hayır</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_add_task">Yeni görev ekle</string>
+    <string name="cd_edit_task">Görevi düzenle</string>
+    <string name="cd_delete_task">Görevi sil</string>
+    <string name="cd_reminder_icon">Hatırlatıcı var</string>
 </resources>

@@ -16,19 +16,18 @@ interface TaskDAO {
     fun getAll(): Flowable<List<Task>>
 
     @Query("SELECT * FROM Task WHERE id = :id")
-    fun finById(id : Int) : Flowable<Task>
+    fun findById(id: Int): Flowable<Task>
 
     @Insert
-    fun insert( task : Task) : Completable
+    fun insert(task: Task): Single<Long>
 
     @Delete
-    fun delete(task : Task) : Completable
+    fun delete(task: Task): Completable
 
     @Update
-    fun update(task: Task) : Completable
+    fun update(task: Task): Completable
 
+    // BootReceiver / Worker için tek seferlik liste (suspend)
+    @Query("SELECT * FROM Task")
+    suspend fun getAllOnce(): List<Task>
 }
-
-
-
-

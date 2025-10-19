@@ -45,6 +45,7 @@
                 android:text="Görev Başlığı"
                 android:textAppearance="?attr/textAppearanceBodyLarge"
                 android:textColor="@color/primaryText"
+                android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>
 

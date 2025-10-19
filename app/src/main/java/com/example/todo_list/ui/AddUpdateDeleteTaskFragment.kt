@@ -8,11 +8,11 @@ import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.navigation.findNavController
-import androidx.room.Room
 import com.example.todo_list.Data.Task
 import com.example.todo_list.Data.TaskDAO
 import com.example.todo_list.Data.TaskDatabase
 import com.example.todo_list.databinding.FragmentAddUpdateDeleteTaskBinding
+import com.example.todo_list.helper.AlarmHelper
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
@@ -27,35 +27,31 @@ class AddUpdateDeleteTaskFragment : Fragment() {
     private var _binding: FragmentAddUpdateDeleteTaskBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var db : TaskDatabase
-    private lateinit var taskDao : TaskDAO
+    private lateinit var db: TaskDatabase
+    private lateinit var taskDao: TaskDAO
 
     private val mDisposable = CompositeDisposable()
 
-    private var updateId : Int =0
-
-
-
+    private var updateId: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        db= Room.databaseBuilder(requireContext(), TaskDatabase::class.java,"Tasks").build()
-        taskDao=db.taskDao()
+        db = TaskDatabase.getInstance(requireContext())
+        taskDao = db.taskDao()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Task işlemleri
-        binding.buttonAdd.setOnClickListener { add(it) }
-        binding.buttonUpdate.setOnClickListener { update(it) }
+        binding.buttonAdd.setOnClickListener { add() }
+        binding.buttonUpdate.setOnClickListener { update() }
 
         arguments?.let {
-            val args= AddUpdateDeleteTaskFragmentArgs.fromBundle(requireArguments())
-            val bilgi= args.bilgi
-            updateId= args.id
+            val args = AddUpdateDeleteTaskFragmentArgs.fromBundle(requireArguments())
+            val bilgi = args.bilgi
+            updateId = args.id
 
-            if(bilgi=="new"){
+            if (bilgi == "new") {
                 binding.buttonAdd.isVisible = true
                 binding.buttonUpdate.isVisible = false
                 binding.textViewTitle.setText("")
@@ -63,11 +59,10 @@ class AddUpdateDeleteTaskFragment : Fragment() {
             } else {
                 binding.buttonAdd.isVisible = false
                 binding.buttonUpdate.isVisible = true
-                binding.buttonUpdate.isEnabled=true
-
+                binding.buttonUpdate.isEnabled = true
 
                 mDisposable.add(
-                    taskDao.getAll()
+                    taskDao.findById(updateId)
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(this::handleResponseUpdate)
@@ -83,7 +78,10 @@ class AddUpdateDeleteTaskFragment : Fragment() {
 
         // Date picker
         binding.editTextDate.setOnClickListener {
-            val datePicker = MaterialDatePicker.Builder.datePicker().build()
+            val datePicker = MaterialDatePicker.Builder.datePicker()
+                .setTitleText("Tarih Seç")
+                .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                .build()
 
             datePicker.show(parentFragmentManager, "DATE_PICKER")
 
@@ -97,22 +95,20 @@ class AddUpdateDeleteTaskFragment : Fragment() {
         binding.editTextTime.setOnClickListener {
             val timePicker = MaterialTimePicker.Builder()
                 .setTimeFormat(TimeFormat.CLOCK_24H)
+                .setTitleText("Saat Seç")
                 .build()
 
             timePicker.show(parentFragmentManager, "TIME_PICKER")
 
             timePicker.addOnPositiveButtonClickListener {
-                val hour = if(timePicker.hour < 10) "0${timePicker.hour}" else "${timePicker.hour}"
-                val minute = if(timePicker.minute < 10) "0${timePicker.minute}" else "${timePicker.minute}"
+                val hour = if (timePicker.hour < 10) "0${timePicker.hour}" else "${timePicker.hour}"
+                val minute = if (timePicker.minute < 10) "0${timePicker.minute}" else "${timePicker.minute}"
                 binding.editTextTime.setText("$hour:$minute")
             }
         }
     }
 
-    private fun add(view: View) {
-        var reminderDate: Long? = null   // Epoch millis, null ise hatırlatıcı yok
-        var reminderTime: String? = null // "HH:mm" formatında, null ise hatırlatıcı yok
-
+    private fun add() {
         val title = binding.textViewTitle.text.toString().trim()
         val description = binding.textViewDescription.text.toString().trim()
 
@@ -120,6 +116,9 @@ class AddUpdateDeleteTaskFragment : Fragment() {
             Toast.makeText(requireContext(), "Lütfen görev başlığı ve açıklama girin", Toast.LENGTH_SHORT).show()
             return
         }
+
+        var reminderDate: Long? = null
+        var reminderTime: String? = null
 
         if (binding.switchReminder.isChecked) {
             val dateText = binding.editTextDate.text.toString().trim()
@@ -133,6 +132,13 @@ class AddUpdateDeleteTaskFragment : Fragment() {
             try {
                 reminderDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(dateText)?.time
                 reminderTime = timeText
+
+                // Geçmiş tarih kontrolü
+                val reminderMillis = combineDateAndTime(reminderDate!!, reminderTime)
+                if (reminderMillis <= System.currentTimeMillis()) {
+                    Toast.makeText(requireContext(), "Hatırlatıcı zamanı gelecekte olmalı", Toast.LENGTH_SHORT).show()
+                    return
+                }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Tarih formatı hatalı", Toast.LENGTH_SHORT).show()
                 return
@@ -146,16 +152,24 @@ class AddUpdateDeleteTaskFragment : Fragment() {
             reminderTime = reminderTime
         )
 
-        // 💾 Insert işlemi
         mDisposable.add(
             taskDao.insert(task)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                    {
-
-
-                        handleResponseForInsert()
+                    { newId ->
+                        if (task.reminderTime != null && task.reminderDate != null) {
+                            val reminderMillis = combineDateAndTime(task.reminderDate, task.reminderTime)
+                            AlarmHelper.setReminder(
+                                requireContext(),
+                                newId.toInt(),
+                                reminderMillis,
+                                task.title,
+                                task.description
+                            )
+                        }
+                        Toast.makeText(requireContext(), "Görev eklendi", Toast.LENGTH_SHORT).show()
+                        requireView().findNavController().popBackStack()
                     },
                     { error ->
                         error.printStackTrace()
@@ -165,12 +179,7 @@ class AddUpdateDeleteTaskFragment : Fragment() {
         )
     }
 
-
-
-    private fun update(view: View) {
-        var reminderDate: Long? = null
-        var reminderTime: String? = null
-
+    private fun update() {
         val title = binding.textViewTitle.text.toString().trim()
         val description = binding.textViewDescription.text.toString().trim()
 
@@ -178,6 +187,9 @@ class AddUpdateDeleteTaskFragment : Fragment() {
             Toast.makeText(requireContext(), "Lütfen görev başlığı ve açıklama girin", Toast.LENGTH_SHORT).show()
             return
         }
+
+        var reminderDate: Long? = null
+        var reminderTime: String? = null
 
         if (binding.switchReminder.isChecked) {
             val dateText = binding.editTextDate.text.toString().trim()
@@ -191,6 +203,13 @@ class AddUpdateDeleteTaskFragment : Fragment() {
             try {
                 reminderDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(dateText)?.time
                 reminderTime = timeText
+
+                // Geçmiş tarih kontrolü
+                val reminderMillis = combineDateAndTime(reminderDate!!, reminderTime)
+                if (reminderMillis <= System.currentTimeMillis()) {
+                    Toast.makeText(requireContext(), "Hatırlatıcı zamanı gelecekte olmalı", Toast.LENGTH_SHORT).show()
+                    return
+                }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Tarih formatı hatalı", Toast.LENGTH_SHORT).show()
                 return
@@ -205,15 +224,26 @@ class AddUpdateDeleteTaskFragment : Fragment() {
         )
         task.id = updateId
 
-        // 💾 Güncelleme işlemi
         mDisposable.add(
             taskDao.update(task)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     {
-
-                        handleResponseForInsert()
+                        if (task.reminderTime != null && task.reminderDate != null) {
+                            val reminderMillis = combineDateAndTime(task.reminderDate, task.reminderTime)
+                            AlarmHelper.setReminder(
+                                requireContext(),
+                                task.id,
+                                reminderMillis,
+                                task.title,
+                                task.description
+                            )
+                        } else {
+                            AlarmHelper.cancelReminder(requireContext(), task.id)
+                        }
+                        Toast.makeText(requireContext(), "Görev güncellendi", Toast.LENGTH_SHORT).show()
+                        requireView().findNavController().popBackStack()
                     },
                     { error ->
                         error.printStackTrace()
@@ -223,59 +253,42 @@ class AddUpdateDeleteTaskFragment : Fragment() {
         )
     }
 
+    private fun combineDateAndTime(dateMillis: Long, timeString: String): Long {
+        val calendar = Calendar.getInstance().apply { timeInMillis = dateMillis }
+        val parts = timeString.split(":")
+        calendar.set(Calendar.HOUR_OF_DAY, parts[0].toInt())
+        calendar.set(Calendar.MINUTE, parts[1].toInt())
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        return calendar.timeInMillis
+    }
 
+    private fun handleResponseUpdate(task: Task) {
+        if (_binding == null) return
 
-    //eğer güncellemek için geldiysek verileri ekrana yükle
-    private fun handleResponseUpdate(tasks: List<Task>){
+        binding.textViewTitle.setText(task.title)
+        binding.textViewDescription.setText(task.description)
 
-        if(_binding==null) return
-        for(task in tasks){
-            if(updateId == task.id){
-                binding.textViewTitle.setText(task.title)
-                binding.textViewDescription.setText(task.description)
-                if(task.reminderDate != null && task.reminderTime != null){
-                    binding.switchReminder.isChecked = true
-                    binding.editTextDate.setText(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(task.reminderDate)))
-                    binding.editTextTime.setText(task.reminderTime)
-
-                }
-            }
+        if (task.reminderDate != null && task.reminderTime != null) {
+            binding.switchReminder.isChecked = true
+            binding.editTextDate.setText(
+                SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(task.reminderDate))
+            )
+            binding.editTextTime.setText(task.reminderTime)
         }
     }
-
-    private fun handleResponseForInsert(){
-        requireView().findNavController().popBackStack()
-
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         _binding = FragmentAddUpdateDeleteTaskBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        mDisposable.clear()
         _binding = null
     }
 }
